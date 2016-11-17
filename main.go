@@ -38,127 +38,183 @@ type UserStruct struct {
 }
 
 type ContestStatus struct {
-	Status string 
+	Status string
 	Result []struct {
-		ID int 
-		ContestID int 
-		CreationTimeSeconds int 
-		RelativeTimeSeconds int64 
-		Problem struct {
-			ContestID int 
-			Index string 
-			Name string 
-			Type string 
-			Points float64 
-			Tags []string 
-		} 
+		ID                  int
+		ContestID           int
+		CreationTimeSeconds int
+		RelativeTimeSeconds int64
+		Problem             struct {
+			ContestID int
+			Index     string
+			Name      string
+			Type      string
+			Points    float64
+			Tags      []string
+		}
 		Author struct {
-			ContestID int 
-			Members []struct {
-				Handle string 
-			} 
-			ParticipantType string 
-			Ghost bool 
+			ContestID int
+			Members   []struct {
+				Handle string
+			}
+			ParticipantType  string
+			Ghost            bool
 			StartTimeSeconds int
-		} 
-		ProgrammingLanguage string 
-		Verdict string 
-		Testset string
-		PassedTestCount int 
-		TimeConsumedMillis int 
-		MemoryConsumedBytes int 
+		}
+		ProgrammingLanguage string
+		Verdict             string
+		Testset             string
+		PassedTestCount     int
+		TimeConsumedMillis  int
+		MemoryConsumedBytes int
 	}
 }
 
 type ContestStandings struct {
-	Status string 
+	Status string
 	Result struct {
 		Contest struct {
-			ID int 
-			Name string 
-			Type string 
-			Phase string 
-			Frozen bool 
-			DurationSeconds int 
-			StartTimeSeconds int 
-			RelativeTimeSeconds int 
-		} 
+			ID                  int
+			Name                string
+			Type                string
+			Phase               string
+			Frozen              bool
+			DurationSeconds     int
+			StartTimeSeconds    int
+			RelativeTimeSeconds int
+		}
 		Problems []struct {
-			ContestID int 
-			Index string 
-			Name string 
-			Type string 
-			Points float64 
-			Tags []string 
-		} 
+			ContestID int
+			Index     string
+			Name      string
+			Type      string
+			Points    float64
+			Tags      []string
+		}
 		Rows []struct {
 			Party struct {
-				ContestID int 
-				Members []struct {
-					Handle string 
-				} 
-				ParticipantType string 
-				Ghost bool 
-				Room int 
-				StartTimeSeconds int 
-			} 
-			Rank int 
-			Points float64 
-			Penalty int 
-			SuccessfulHackCount int 
-			UnsuccessfulHackCount int 
-			ProblemResults []struct {
-				Points float64 
-				RejectedAttemptCount int 
-				Type string 
-				BestSubmissionTimeSeconds int 
-			} 
-		} 
-	} 
+				ContestID int
+				Members   []struct {
+					Handle string
+				}
+				ParticipantType  string
+				Ghost            bool
+				Room             int
+				StartTimeSeconds int
+			}
+			Rank                  int
+			Points                float64
+			Penalty               int
+			SuccessfulHackCount   int
+			UnsuccessfulHackCount int
+			ProblemResults        []struct {
+				Points                    float64
+				RejectedAttemptCount      int
+				Type                      string
+				BestSubmissionTimeSeconds int
+			}
+		}
+	}
 }
-///////////////////////////////////////////
+type Tags struct {
+	Status string
+	Result struct {
+		Problems []struct {
+			ContestID int
+			Index     string
+			Name      string
+			Type      string
+			Points    float64
+			Tags      []string
+		}
+		ProblemStatistics []struct {
+			ContestID   int
+			Index       string
+			SolvedCount int
+		}
+	}
+}
 
-func chatbotProcess(session chatbot.Session, message string) (string, error) {
+/////////////////////////////////////////////
 
-	switch session["state"] {
+func chatbotProcess(session *chatbot.Session, message string) (string, error) {
+	switch session.State {
 	case 0:
 		return handle0Out(session, message), nil
 	case 1:
 		return handle1Out(session, message), nil
+	case 2:
+		return handle2Out(session, message), nil
 
 	}
 
 	return fmt.Sprintf("Hello %s, my name is chatbot. What was yours again?", message), nil
 }
-func handle0Out(session chatbot.Session, message string) string {
+func handle0Out(session *chatbot.Session, message string) string {
 
 	if validateHandle(message) {
 		return handle1In(session, message)
 	}
 	return handle0In(session, message)
 }
-func handle0In(session chatbot.Session, message string) string {
+func handle0In(session *chatbot.Session, message string) string {
 	return "Wrong handle, please enter a valid handle"
 
 }
 
-func handle1In(session chatbot.Session, message string) string {
-	session["state"] = 1
+func handle1In(session *chatbot.Session, message string) string {
+	session.State = 1
 
 	return "So, how could I help you?"
 
 }
 
-func handle1Out(session chatbot.Session, message string) string {
+func handle1Out(session *chatbot.Session, message string) string {
 	messageLower := strings.ToLower(message)
 	ss := strings.Split(messageLower, " ")
 
 	switch ss[0] {
 	case "did":
-		if validateHandle(ss[1])&&validateProblem(ss[3])
+		if validateHandle(ss[1]) && validateProblem(ss[3]) {
+			// to be completed
+		}
+	//
+	case "could":
+		if validtag(ss[5]) {
+			return handle2In(session, message)
+		} else {
+			return handle1In(session, message)
+		}
 
 	}
+	return "blabezo"
 
+}
+func handle2In(session *chatbot.Session, message string) string {
+	session.State = 2
+
+	return "What level"
+
+}
+func handle2Out(session *chatbot.Session, message string) string {
+	if message == "easy" || message == "hard" || message == "hard" {
+		return handle3In(session, message)
+	}
+	return handle2In(session, message)
+}
+func handle3In(session *chatbot.Session, message string) string {
+	session.State = 3
+
+	return "dwar bnafsk :p" /// balabizoo
+
+}
+func validtag(tag string) bool {
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	t := Tags{}
+	json.Unmarshal(body, &t)
+	return len(t.Result.Problems) > 0
 }
 func validateHandle(handle string) bool {
 	resp, _ := http.Get("http://codeforces.com/api/user.info?handles=" + handle)
@@ -170,16 +226,17 @@ func validateHandle(handle string) bool {
 	return user.Status == "OK"
 
 }
-func validateProblem (problem string ) bool{
-	contestId :=problem[:len(problem)-1]
-	resp, _ := http.Get("http://codeforces.com/api/contest.standings?contestId="+contestId+"&from=1&count=1")
+func validateProblem(problem string) bool {
+	contestId := problem[:len(problem)-1]
+	resp, _ := http.Get("http://codeforces.com/api/contest.standings?contestId=" + contestId + "&from=1&count=1")
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	contest := ContestStandings{}
 	json.Unmarshal(body, &contest)
 
+	return true //blabezo
+
 	// TODO: loop on problems to make sure letter is there.
-	
 
 }
 func main() {
