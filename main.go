@@ -135,11 +135,10 @@ type Tags struct {
 	}
 }
 
-///////////////////////////////////////////
+/////////////////////////////////////////////
 
-func chatbotProcess(session chatbot.Session, message string) (string, error) {
-
-	switch session["state"] {
+func chatbotProcess(session *chatbot.Session, message string) (string, error) {
+	switch session.State {
 	case 0:
 		return handle0Out(session, message), nil
 	case 1:
@@ -151,26 +150,26 @@ func chatbotProcess(session chatbot.Session, message string) (string, error) {
 
 	return fmt.Sprintf("Hello %s, my name is chatbot. What was yours again?", message), nil
 }
-func handle0Out(session chatbot.Session, message string) string {
+func handle0Out(session *chatbot.Session, message string) string {
 
 	if validateHandle(message) {
 		return handle1In(session, message)
 	}
 	return handle0In(session, message)
 }
-func handle0In(session chatbot.Session, message string) string {
+func handle0In(session *chatbot.Session, message string) string {
 	return "Wrong handle, please enter a valid handle"
 
 }
 
-func handle1In(session chatbot.Session, message string) string {
-	session["state"] = 1
+func handle1In(session *chatbot.Session, message string) string {
+	session.State = 1
 
 	return "So, how could I help you?"
 
 }
 
-func handle1Out(session chatbot.Session, message string) string {
+func handle1Out(session *chatbot.Session, message string) string {
 	messageLower := strings.ToLower(message)
 	ss := strings.Split(messageLower, " ")
 
@@ -191,20 +190,20 @@ func handle1Out(session chatbot.Session, message string) string {
 	return "blabezo"
 
 }
-func handle2In(session chatbot.Session, message string) string {
-	session["state"] = 2
+func handle2In(session *chatbot.Session, message string) string {
+	session.State = 2
 
 	return "What level"
 
 }
-func handle2Out(session chatbot.Session, message string) string {
+func handle2Out(session *chatbot.Session, message string) string {
 	if message == "easy" || message == "hard" || message == "hard" {
 		return handle3In(session, message)
 	}
 	return handle2In(session, message)
 }
-func handle3In(session chatbot.Session, message string) string {
-	session["state"] = 3
+func handle3In(session *chatbot.Session, message string) string {
+	session.State = 3
 
 	return "dwar bnafsk :p" /// balabizoo
 
