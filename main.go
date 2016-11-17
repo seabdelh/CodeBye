@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sedki-abdelhakim/chatbot"
@@ -128,7 +129,7 @@ type Tags struct {
 			Tags      []string
 		}
 		ProblemStatistics []struct {
-			ContestID   string
+			ContestID   int
 			Index       string
 			SolvedCount int
 		}
@@ -216,15 +217,16 @@ func handle3In(session *chatbot.Session, msg string) string {
 	body, _ := ioutil.ReadAll(resp.Body)
 	t := Tags{}
 	json.Unmarshal(body, &t)
+	fmt.Printf("%+v\n", t)
 	prob := t.Result.ProblemStatistics
 	l := len(prob)
 	for i := 0; i < l; i++ {
 		if msg == "easy" && prob[i].SolvedCount > 3000 {
-			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+			return "http://codeforces.com/problemset/problem/" + strconv.Itoa(prob[i].ContestID) + "/" + prob[i].Index
 		} else if msg == "hard" && prob[i].SolvedCount < 1000 {
-			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+			return "http://codeforces.com/problemset/problem/" + strconv.Itoa(prob[i].ContestID) + "/" + prob[i].Index
 		} else if msg == "medium" && prob[i].SolvedCount >= 1000 && prob[i].SolvedCount < 3000 {
-			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+			return "http://codeforces.com/problemset/problem/" + strconv.Itoa(prob[i].ContestID) + "/" + prob[i].Index
 		}
 	}
 	return "sorry can't find a suitable problem"
