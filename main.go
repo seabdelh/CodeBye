@@ -7,10 +7,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sedki-abdelhakim/chatbot"
 	// Autoload environment variables in .env
+
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -38,84 +40,85 @@ type UserStruct struct {
 }
 
 type ContestStatus struct {
-	Status string 
+	Status string
 	Result []struct {
-		ID int 
-		ContestID int 
-		CreationTimeSeconds int 
-		RelativeTimeSeconds int64 
-		Problem struct {
-			ContestID int 
-			Index string 
-			Name string 
-			Type string 
-			Points float64 
-			Tags []string 
-		} 
+		ID                  int
+		ContestID           int
+		CreationTimeSeconds int
+		RelativeTimeSeconds int64
+		Problem             struct {
+			ContestID int
+			Index     string
+			Name      string
+			Type      string
+			Points    float64
+			Tags      []string
+		}
 		Author struct {
-			ContestID int 
-			Members []struct {
-				Handle string 
-			} 
-			ParticipantType string 
-			Ghost bool 
+			ContestID int
+			Members   []struct {
+				Handle string
+			}
+			ParticipantType  string
+			Ghost            bool
 			StartTimeSeconds int
-		} 
-		ProgrammingLanguage string 
-		Verdict string 
-		Testset string
-		PassedTestCount int 
-		TimeConsumedMillis int 
-		MemoryConsumedBytes int 
+		}
+		ProgrammingLanguage string
+		Verdict             string
+		Testset             string
+		PassedTestCount     int
+		TimeConsumedMillis  int
+		MemoryConsumedBytes int
 	}
 }
 
 type ContestStandings struct {
-	Status string 
+	Status string
 	Result struct {
 		Contest struct {
-			ID int 
-			Name string 
-			Type string 
-			Phase string 
-			Frozen bool 
-			DurationSeconds int 
-			StartTimeSeconds int 
-			RelativeTimeSeconds int 
-		} 
+			ID                  int
+			Name                string
+			Type                string
+			Phase               string
+			Frozen              bool
+			DurationSeconds     int
+			StartTimeSeconds    int
+			RelativeTimeSeconds int
+		}
 		Problems []struct {
-			ContestID int 
-			Index string 
-			Name string 
-			Type string 
-			Points float64 
-			Tags []string 
-		} 
+			ContestID int
+			Index     string
+			Name      string
+			Type      string
+			Points    float64
+			Tags      []string
+		}
 		Rows []struct {
 			Party struct {
-				ContestID int 
-				Members []struct {
-					Handle string 
-				} 
-				ParticipantType string 
-				Ghost bool 
-				Room int 
-				StartTimeSeconds int 
-			} 
-			Rank int 
-			Points float64 
-			Penalty int 
-			SuccessfulHackCount int 
-			UnsuccessfulHackCount int 
-			ProblemResults []struct {
-				Points float64 
-				RejectedAttemptCount int 
-				Type string 
-				BestSubmissionTimeSeconds int 
-			} 
-		} 
-	} 
+				ContestID int
+				Members   []struct {
+					Handle string
+				}
+				ParticipantType  string
+				Ghost            bool
+				Room             int
+				StartTimeSeconds int
+			}
+			Rank                  int
+			Points                float64
+			Penalty               int
+			SuccessfulHackCount   int
+			UnsuccessfulHackCount int
+			ProblemResults        []struct {
+				Points                    float64
+				RejectedAttemptCount      int
+				Type                      string
+				BestSubmissionTimeSeconds int
+			}
+		}
+	}
 }
+
 ///////////////////////////////////////////
 
 func chatbotProcess(session chatbot.Session, message string) (string, error) {
@@ -138,26 +141,51 @@ func handle0Out(session chatbot.Session, message string) string {
 	return handle0In(session, message)
 }
 func handle0In(session chatbot.Session, message string) string {
+	session["state"] = 0
 	return "Wrong handle, please enter a valid handle"
 
 }
 
 func handle1In(session chatbot.Session, message string) string {
 	session["state"] = 1
-
 	return "So, how could I help you?"
 
 }
 
 func handle1Out(session chatbot.Session, message string) string {
-	messageLower := strings.ToLower(message)
-	ss := strings.Split(messageLower, " ")
-
-	switch ss[0] {
+	messageArr := strings.Split(message, " ")
+	keyword := strings.ToLower(messageArr[0])
+	handle := messageArr[1]
+	problem := messageArr[3]
+	var messageReply string
+	switch keyword {
 	case "did":
-		if validateHandle(ss[1])&&validateProblem(ss[3])
+		if validateHandle(handle) && validateProblem(problem) {
+			messageReply = handle2In(message)
+		}
+		break
+	}
+	return messageReply
+
+}
+
+func handle2In(message string) string {
+
+	messageArr := strings.Split(message, " ")
+	handle := messageArr[1]
+	problem := messageArr[3]
+	resp, _ := http.Get("http://codeforces.com/api/contest.status?contestId=" + problem[:len(problem)-1] + "&handle=" + handle)
+	body, _ := ioutil.ReadAll(resp.Body)
+	contestStatus := ContestStatus{}
+	json.Unmarshal(body, &contestStatus)
+	for _, result := range contestStatus.Result {
+		if strings.EqualFold(result.Problem.Index, string(problem[len(problem)-1])) && result.Verdict == "OK" {
+			return handle + " has solved problem: " + problem + " in " +
+				strconv.Itoa(result.TimeConsumedMillis) + " milli seconds"
+		}
 
 	}
+	return handle + " has not solved problem: " + problem
 
 }
 func validateHandle(handle string) bool {
@@ -170,16 +198,21 @@ func validateHandle(handle string) bool {
 	return user.Status == "OK"
 
 }
-func validateProblem (problem string ) bool{
-	contestId :=problem[:len(problem)-1]
-	resp, _ := http.Get("http://codeforces.com/api/contest.standings?contestId="+contestId+"&from=1&count=1")
+func validateProblem(problem string) bool {
+	contestID := problem[:len(problem)-1]
+	resp, _ := http.Get("http://codeforces.com/api/contest.standings?contestId=" + contestID + "&from=1&count=1")
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	contest := ContestStandings{}
 	json.Unmarshal(body, &contest)
 
-	// TODO: loop on problems to make sure letter is there.
-	
+	for _, value := range contest.Result.Problems {
+		if strings.EqualFold(value.Index, string(problem[len(problem)-1])) { //do not change messageLower[0] to messageLower :)
+			return true //problemID is valid
+		}
+	}
+
+	return false //problemID is invalid
 
 }
 func main() {
