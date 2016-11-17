@@ -206,12 +206,12 @@ func handle2Out(session *chatbot.Session, message string) string {
 	}
 	return handle2In(session, message)
 }
-func handle3In(session *chatbot.Session, tag string) string {
+func handle3In(session *chatbot.Session, msg string) string {
 	session.State = 3
 	// easy > 3000
 	// 1000 < medium <3000
 	// hard < 1000
-	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + session.Tag)
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	t := Tags{}
@@ -219,11 +219,11 @@ func handle3In(session *chatbot.Session, tag string) string {
 	prob := t.Result.ProblemStatistics
 	l := len(prob)
 	for i := 0; i < l; i++ {
-		if tag == "easy" && prob[i].SolvedCount > 3000 {
+		if msg == "easy" && prob[i].SolvedCount > 3000 {
 			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
-		} else if tag == "hard" && prob[i].SolvedCount < 1000 {
+		} else if msg == "hard" && prob[i].SolvedCount < 1000 {
 			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
-		} else if tag == "medium" && prob[i].SolvedCount >= 1000 && prob[i].SolvedCount < 3000 {
+		} else if msg == "medium" && prob[i].SolvedCount >= 1000 && prob[i].SolvedCount < 3000 {
 			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
 		}
 	}
