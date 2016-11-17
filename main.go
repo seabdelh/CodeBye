@@ -128,7 +128,7 @@ type Tags struct {
 			Tags      []string
 		}
 		ProblemStatistics []struct {
-			ContestID   int
+			ContestID   string
 			Index       string
 			SolvedCount int
 		}
@@ -145,6 +145,8 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 		return handle1Out(session, message), nil
 	case 2:
 		return handle2Out(session, message), nil
+	case 3:
+		return handle1Out(session, message), nil
 
 	}
 
@@ -192,20 +194,40 @@ func handle1Out(session *chatbot.Session, message string) string {
 }
 func handle2In(session *chatbot.Session, message string) string {
 	session.State = 2
-
+	messageLower := strings.ToLower(message)
+	ss := strings.Split(messageLower, " ")
+	session.Tag = ss[5]
 	return "What level"
 
 }
 func handle2Out(session *chatbot.Session, message string) string {
-	if message == "easy" || message == "hard" || message == "hard" {
+	if message == "easy" || message == "medium" || message == "hard" {
 		return handle3In(session, message)
 	}
 	return handle2In(session, message)
 }
-func handle3In(session *chatbot.Session, message string) string {
+func handle3In(session *chatbot.Session, tag string) string {
 	session.State = 3
-
-	return "dwar bnafsk :p" /// balabizoo
+	// easy > 3000
+	// 1000 < medium <3000
+	// hard < 1000
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	t := Tags{}
+	json.Unmarshal(body, &t)
+	prob := t.Result.ProblemStatistics
+	l := len(prob)
+	for i := 0; i < l; i++ {
+		if tag == "easy" && prob[i].SolvedCount > 3000 {
+			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+		} else if tag == "hard" && prob[i].SolvedCount < 1000 {
+			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+		} else if tag == "medium" && prob[i].SolvedCount >= 1000 && prob[i].SolvedCount < 3000 {
+			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+		}
+	}
+	return "sorry can't find a suitable problem"
 
 }
 func validtag(tag string) bool {
