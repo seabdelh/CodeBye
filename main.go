@@ -146,7 +146,7 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 	case 2:
 		return handle2Out(session, message), nil
 	case 3:
-		return handle1Out(session, message), nil
+		return handle1In(session, message), nil
 
 	}
 
