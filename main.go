@@ -9,8 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ramin0/chatbot"
-
+	"github.com/sedki-abdelhakim/chatbot"
 	// Autoload environment variables in .env
 	_ "github.com/joho/godotenv/autoload"
 )
