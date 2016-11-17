@@ -150,6 +150,8 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 		return handle2Out(session, message), nil
 	case 3:
 		return handle1In(session, message), nil
+	case 4:
+		return handle1In(session, message), nil
 
 	}
 
@@ -163,7 +165,7 @@ func handle0Out(session *chatbot.Session, message string) string {
 	return handle0In(session, message)
 }
 func handle0In(session *chatbot.Session, message string) string {
-	session.state = 0
+	session.State = 0
 	return "Wrong handle, please enter a valid handle"
 
 }
@@ -171,18 +173,18 @@ func handle0In(session *chatbot.Session, message string) string {
 func handle1Out(session *chatbot.Session, message string) string {
 	messageArr := strings.Split(message, " ")
 	keyword := strings.ToLower(messageArr[0])
-	handle := messageArr[1]
-	problem := messageArr[3]
 	var messageReply string
 
 	switch keyword {
 	case "did":
-		if validateHandle(handle) && validateProblem(problem) {
-			messageReply = handle4In(message)
+		if len(messageArr) > 3 && validateHandle(messageArr[1]) && validateProblem(messageArr[3]) {
+			messageReply = handle4In(session, message)
+		} else {
+			messageReply = handle1In(session, message)
 		}
 		break
 	case "could":
-		if validtag(messageArr[5]) {
+		if len(messageArr) > 5 && validtag(strings.ToLower(messageArr[5])) {
 			messageReply = handle2In(session, message)
 		} else {
 			messageReply = handle1In(session, message)
@@ -193,9 +195,13 @@ func handle1Out(session *chatbot.Session, message string) string {
 }
 
 func handle1In(session *chatbot.Session, message string) string {
-	session.State = 1
-	return "So, how could I help you?"
+	messageRes := "So, how could I help you?"
+	if session.State == 1 || session.State == 2 {
+		messageRes = "I did not get that !"
+	}
 
+	session.State = 1
+	return messageRes
 }
 
 func handle2In(session *chatbot.Session, message string) string {
@@ -237,7 +243,8 @@ func handle3In(session *chatbot.Session, msg string) string {
 	return "sorry can't find a suitable problem"
 }
 
-func handle4In(message string) string {
+func handle4In(session *chatbot.Session, message string) string {
+	session.State = 4
 
 	messageArr := strings.Split(message, " ")
 	handle := messageArr[1]
