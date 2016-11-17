@@ -16,7 +16,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-/////////////////////////////////
+// UserStruct respresents a user object returned from Codeforces API
 type UserStruct struct {
 	Status string
 	Result []struct {
@@ -39,6 +39,7 @@ type UserStruct struct {
 	}
 }
 
+// ContestStatus represents status of a contest and its submissions in Codeforces.
 type ContestStatus struct {
 	Status string
 	Result []struct {
@@ -72,6 +73,7 @@ type ContestStatus struct {
 	}
 }
 
+// ContestStandings respresents result of a contest and its problems in Codeforces.
 type ContestStandings struct {
 	Status string
 	Result struct {
@@ -119,6 +121,7 @@ type ContestStandings struct {
 	}
 }
 
+// Tags struct respresents list of problems with a specific tag on Codeforces.
 type Tags struct {
 	Status string
 	Result struct {
