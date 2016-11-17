@@ -7,10 +7,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sedki-abdelhakim/chatbot"
 	// Autoload environment variables in .env
+
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -116,6 +118,7 @@ type ContestStandings struct {
 		}
 	}
 }
+
 type Tags struct {
 	Status string
 	Result struct {
@@ -147,6 +150,8 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 		return handle2Out(session, message), nil
 	case 3:
 		return handle1In(session, message), nil
+	case 4:
+		return handle1In(session, message), nil
 
 	}
 
@@ -160,38 +165,45 @@ func handle0Out(session *chatbot.Session, message string) string {
 	return handle0In(session, message)
 }
 func handle0In(session *chatbot.Session, message string) string {
+	session.State = 0
 	return "Wrong handle, please enter a valid handle"
 
 }
 
-func handle1In(session *chatbot.Session, message string) string {
-	session.State = 1
-
-	return "So, how could I help you?"
-
-}
-
 func handle1Out(session *chatbot.Session, message string) string {
-	messageLower := strings.ToLower(message)
-	ss := strings.Split(messageLower, " ")
+	messageArr := strings.Split(message, " ")
+	keyword := strings.ToLower(messageArr[0])
+	var messageReply string
 
-	switch ss[0] {
+	switch keyword {
 	case "did":
-		if validateHandle(ss[1]) && validateProblem(ss[3]) {
-			// to be completed
-		}
-	//
-	case "could":
-		if validtag(ss[5]) {
-			return handle2In(session, message)
+		if len(messageArr) > 3 && validateHandle(messageArr[1]) && validateProblem(messageArr[3]) {
+			messageReply = handle4In(session, message)
 		} else {
-			return handle1In(session, message)
+			messageReply = handle1In(session, message)
 		}
-
+		break
+	case "could":
+		if len(messageArr) > 5 && validtag(strings.ToLower(messageArr[5])) {
+			messageReply = handle2In(session, message)
+		} else {
+			messageReply = handle1In(session, message)
+		}
+		break
 	}
-	return "blabezo"
-
+	return messageReply
 }
+
+func handle1In(session *chatbot.Session, message string) string {
+	messageRes := "So, how could I help you?"
+	if session.State == 1 || session.State == 2 {
+		messageRes = "I did not get that !"
+	}
+
+	session.State = 1
+	return messageRes
+}
+
 func handle2In(session *chatbot.Session, message string) string {
 	session.State = 2
 	messageLower := strings.ToLower(message)
@@ -200,6 +212,7 @@ func handle2In(session *chatbot.Session, message string) string {
 	return "What level"
 
 }
+
 func handle2Out(session *chatbot.Session, message string) string {
 	if message == "easy" || message == "medium" || message == "hard" {
 		return handle3In(session, message)
@@ -228,7 +241,25 @@ func handle3In(session *chatbot.Session, msg string) string {
 		}
 	}
 	return "sorry can't find a suitable problem"
+}
 
+func handle4In(session *chatbot.Session, message string) string {
+	session.State = 4
+
+	messageArr := strings.Split(message, " ")
+	handle := messageArr[1]
+	problem := messageArr[3]
+	resp, _ := http.Get("http://codeforces.com/api/contest.status?contestId=" + problem[:len(problem)-1] + "&handle=" + handle)
+	body, _ := ioutil.ReadAll(resp.Body)
+	contestStatus := ContestStatus{}
+	json.Unmarshal(body, &contestStatus)
+	for _, result := range contestStatus.Result {
+		if strings.EqualFold(result.Problem.Index, string(problem[len(problem)-1])) && result.Verdict == "OK" {
+			return handle + " has solved problem: " + problem + " in " +
+				strconv.Itoa(result.TimeConsumedMillis) + " milli seconds"
+		}
+	}
+	return handle + " has not solved problem: " + problem
 }
 func validtag(tag string) bool {
 	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
@@ -249,16 +280,20 @@ func validateHandle(handle string) bool {
 
 }
 func validateProblem(problem string) bool {
-	contestId := problem[:len(problem)-1]
-	resp, _ := http.Get("http://codeforces.com/api/contest.standings?contestId=" + contestId + "&from=1&count=1")
+	contestID := problem[:len(problem)-1]
+	resp, _ := http.Get("http://codeforces.com/api/contest.standings?contestId=" + contestID + "&from=1&count=1")
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	contest := ContestStandings{}
 	json.Unmarshal(body, &contest)
 
-	return true //blabezo
+	for _, value := range contest.Result.Problems {
+		if strings.EqualFold(value.Index, string(problem[len(problem)-1])) { //do not change messageLower[0] to messageLower :)
+			return true //problemID is valid
+		}
+	}
 
-	// TODO: loop on problems to make sure letter is there.
+	return false //problemID is invalid
 
 }
 func main() {
