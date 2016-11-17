@@ -179,8 +179,6 @@ func validateProblem (problem string ) bool{
 	contest := ContestStandings{}
 	json.Unmarshal(body, &contest)
 
-return true //blabezo
-
 	// TODO: loop on problems to make sure letter is there.
 	
 
