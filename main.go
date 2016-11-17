@@ -144,6 +144,7 @@ type Tags struct {
 /////////////////////////////////////////////
 
 func chatbotProcess(session *chatbot.Session, message string) (string, error) {
+
 	switch session.State {
 	case 0:
 		return handle0Out(session, message), nil
@@ -151,18 +152,22 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 		return handle1Out(session, message), nil
 	case 2:
 		return handle2Out(session, message), nil
+	// cases 3,4,5,6 returning to state 1 with success
 	case 3:
-		return handle1In(session, message), nil
+		return handle1Out(session, message), nil
 	case 4:
-		return handle1In(session, message), nil
+		return handle1Out(session, message), nil
+	case 5:
+		return handle1Out(session, message), nil
 
 	}
 
-	return fmt.Sprintf("Hello %s, my name is chatbot. What was yours again?", message), nil
+	return "", nil
 }
 func handle0Out(session *chatbot.Session, message string) string {
 
 	if validateHandle(message) {
+		session.Handel = message
 		return handle1In(session, message)
 	}
 	return handle0In(session, message)
@@ -193,6 +198,17 @@ func handle1Out(session *chatbot.Session, message string) string {
 			messageReply = handle1In(session, message)
 		}
 		break
+	case "give":
+		if len(messageArr) > 5 {
+			messageReply = handle5In(session, messageArr[5])
+		} else {
+			messageReply = handle1In(session, message)
+
+		}
+		break
+	}
+	if messageReply == "" {
+		messageReply = "I did not get that !"
 	}
 	return messageReply
 }
@@ -247,6 +263,8 @@ func handle3In(session *chatbot.Session, msg string) string {
 }
 
 func handle4In(session *chatbot.Session, message string) string {
+	//about if someone solved a specific problem
+	//format: did [handle] solved [problemID]
 	session.State = 4
 
 	messageArr := strings.Split(message, " ")
@@ -264,6 +282,40 @@ func handle4In(session *chatbot.Session, message string) string {
 	}
 	return handle + " has not solved problem: " + problem
 }
+
+func handle5In(session *chatbot.Session, handle string) string {
+	//about the progress of someone
+	//format: give me some info about [handle]
+	session.State = 5
+	if strings.EqualFold("me", handle) {
+		handle = session.Handel //it is handle not handel but who cares L :)
+	}
+	resp, _ := http.Get("http://codeforces.com/api/user.info?handles=" + handle)
+	body, _ := ioutil.ReadAll(resp.Body)
+	user := UserStruct{}
+	json.Unmarshal(body, &user)
+	if user.Status != "OK" {
+		return "Sorry I could not get you the info you want"
+	}
+	return `First name: ` + user.Result[0].FirstName + ", " +
+		`Last name: ` + user.Result[0].LastName + ", " +
+		`Rating: ` + strconv.Itoa(user.Result[0].Rating) + ", " +
+		`Country: ` + user.Result[0].Country + ", " +
+		`Last online: ` + strconv.Itoa(user.Result[0].LastOnlineTimeSeconds) + ", " +
+		`City: ` + user.Result[0].City + ", " +
+		`Number of friends: ` + strconv.Itoa(user.Result[0].FriendOfCount) + ", " +
+		`Title photo: ` + user.Result[0].TitlePhoto + ", " +
+		`Handle: ` + user.Result[0].Handle + ", " +
+		`Avatar: ` + user.Result[0].Avatar + ", " +
+		`Contribution: ` + strconv.Itoa(user.Result[0].Contribution) + ", " +
+		`Organization: ` + user.Result[0].Organization + ", " +
+		`Rank: ` + user.Result[0].Rank + ", " +
+		`Max rating: ` + strconv.Itoa(user.Result[0].MaxRating) + ", " +
+		`Registration time: ` + strconv.Itoa(user.Result[0].RegistrationTimeSeconds) + ", " +
+		`Max rank: ` + user.Result[0].MaxRank
+
+}
+
 func validtag(tag string) bool {
 	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
 	defer resp.Body.Close()
