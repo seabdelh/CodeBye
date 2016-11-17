@@ -1,4 +1,5 @@
 /.vscode/                                                                                                           
-/vendor/*/
+/vendor/github/heppu/
+/vendor/github/joho/
 /tmp/
 debug

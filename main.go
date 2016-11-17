@@ -119,57 +119,125 @@ type ContestStandings struct {
 	}
 }
 
-///////////////////////////////////////////
+type Tags struct {
+	Status string
+	Result struct {
+		Problems []struct {
+			ContestID int
+			Index     string
+			Name      string
+			Type      string
+			Points    float64
+			Tags      []string
+		}
+		ProblemStatistics []struct {
+			ContestID   string
+			Index       string
+			SolvedCount int
+		}
+	}
+}
 
-func chatbotProcess(session chatbot.Session, message string) (string, error) {
+/////////////////////////////////////////////
 
-	switch session["state"] {
+func chatbotProcess(session *chatbot.Session, message string) (string, error) {
+	switch session.State {
 	case 0:
 		return handle0Out(session, message), nil
 	case 1:
 		return handle1Out(session, message), nil
+	case 2:
+		return handle2Out(session, message), nil
+	case 3:
+		return handle1In(session, message), nil
 
 	}
 
 	return fmt.Sprintf("Hello %s, my name is chatbot. What was yours again?", message), nil
 }
-func handle0Out(session chatbot.Session, message string) string {
+func handle0Out(session *chatbot.Session, message string) string {
 
 	if validateHandle(message) {
 		return handle1In(session, message)
 	}
 	return handle0In(session, message)
 }
-func handle0In(session chatbot.Session, message string) string {
-	session["state"] = 0
+func handle0In(session *chatbot.Session, message string) string {
+	session.state = 0
 	return "Wrong handle, please enter a valid handle"
 
 }
 
-func handle1In(session chatbot.Session, message string) string {
-	session["state"] = 1
-	return "So, how could I help you?"
-
-}
-
-func handle1Out(session chatbot.Session, message string) string {
+func handle1Out(session *chatbot.Session, message string) string {
 	messageArr := strings.Split(message, " ")
 	keyword := strings.ToLower(messageArr[0])
 	handle := messageArr[1]
 	problem := messageArr[3]
 	var messageReply string
+
 	switch keyword {
 	case "did":
 		if validateHandle(handle) && validateProblem(problem) {
-			messageReply = handle2In(message)
+			messageReply = handle4In(message)
+		}
+		break
+	case "could":
+		if validtag(messageArr[5]) {
+			messageReply = handle2In(session, message)
+		} else {
+			messageReply = handle1In(session, message)
 		}
 		break
 	}
 	return messageReply
+}
+
+func handle1In(session *chatbot.Session, message string) string {
+	session.State = 1
+	return "So, how could I help you?"
 
 }
 
-func handle2In(message string) string {
+func handle2In(session *chatbot.Session, message string) string {
+	session.State = 2
+	messageLower := strings.ToLower(message)
+	ss := strings.Split(messageLower, " ")
+	session.Tag = ss[5]
+	return "What level"
+
+}
+
+func handle2Out(session *chatbot.Session, message string) string {
+	if message == "easy" || message == "medium" || message == "hard" {
+		return handle3In(session, message)
+	}
+	return handle2In(session, message)
+}
+func handle3In(session *chatbot.Session, msg string) string {
+	session.State = 3
+	// easy > 3000
+	// 1000 < medium <3000
+	// hard < 1000
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + session.Tag)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	t := Tags{}
+	json.Unmarshal(body, &t)
+	prob := t.Result.ProblemStatistics
+	l := len(prob)
+	for i := 0; i < l; i++ {
+		if msg == "easy" && prob[i].SolvedCount > 3000 {
+			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+		} else if msg == "hard" && prob[i].SolvedCount < 1000 {
+			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+		} else if msg == "medium" && prob[i].SolvedCount >= 1000 && prob[i].SolvedCount < 3000 {
+			return "http://codeforces.com/problemset/problem/" + prob[i].ContestID + "/" + prob[i].Index
+		}
+	}
+	return "sorry can't find a suitable problem"
+}
+
+func handle4In(message string) string {
 
 	messageArr := strings.Split(message, " ")
 	handle := messageArr[1]
@@ -183,10 +251,16 @@ func handle2In(message string) string {
 			return handle + " has solved problem: " + problem + " in " +
 				strconv.Itoa(result.TimeConsumedMillis) + " milli seconds"
 		}
-
 	}
 	return handle + " has not solved problem: " + problem
-
+}
+func validtag(tag string) bool {
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	t := Tags{}
+	json.Unmarshal(body, &t)
+	return len(t.Result.Problems) > 0
 }
 func validateHandle(handle string) bool {
 	resp, _ := http.Get("http://codeforces.com/api/user.info?handles=" + handle)
