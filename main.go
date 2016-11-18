@@ -142,6 +142,25 @@ type Tags struct {
 	}
 }
 
+// ProjectObject represents a response of todo.ly when creating objects
+type ProjectObject struct {
+	Id 			string,
+	Content 	string,
+	ItemsCount 	string,
+	Icon 		string,
+	ItemType	string,
+	ParentId	string,
+	Collapsed	string,
+	ItemOrder	string,
+	Children	string,
+	IsProjectShared	string,
+	IsShareApproved	string,
+	IsOwnProject	string,
+	LastSyncedDateTime	string,
+	LastUpdatedDate		string,
+	Deleted		string
+}
+
 const (
 	passLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
@@ -347,6 +366,28 @@ func handle6In(session *chatbot.Session, message string) string {
 	projectName := "CodeBye Plan " + r
 	projectId := createTodoProject(projectName, generatedEmail, generatedPass)
 
+
+
+}
+
+func createTodoProject(projectName string, generatedEmail string, generatedPass string) string {
+	XMLCreateProject := "<ProjectObject>" +
+		"<Content>" + projectName + "</Content> " +
+		"<Icon>4</Icon> " +
+		"</ProjectObject>"
+
+	client := &http.Client{}
+    req, err := http.NewRequest("POST", "https://todo.ly/api/projects.xml", strings.NewReader(XMLCreateProject))
+    req.SetBasicAuth(generatedEmail, generatedPass)
+    resp, err := client.Do(req)
+    if err != nil{
+        log.Fatal(err)
+    }
+    bodyText, err := ioutil.ReadAll(resp.Body)
+
+
+    s := string(bodyText)
+    return s
 }
 
 func getProblems() []string {
