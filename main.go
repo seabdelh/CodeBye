@@ -15,6 +15,7 @@ import (
 	// Autoload environment variables in .env
 
 	_ "github.com/joho/godotenv/autoload"
+	"encoding/xml"
 )
 
 // UserStruct respresents a user object returned from Codeforces API
@@ -385,9 +386,9 @@ func createTodoProject(projectName string, generatedEmail string, generatedPass 
     }
     bodyText, err := ioutil.ReadAll(resp.Body)
 
-
-    s := string(bodyText)
-    return s
+	p := ProjectObject{}
+	xml.Unmarshal(bodyText, &p)
+    return p.Id
 }
 
 func getProblems() []string {
