@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -139,6 +140,18 @@ type Tags struct {
 			SolvedCount int
 		}
 	}
+}
+
+const (
+	passLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+)
+
+func randomPass() string {
+	p := make([]byte, 10)
+	for i := range p {
+		p[i] = passLetters[rand.Intn(len(passLetters))]
+	}
+	return string(p)
 }
 
 /////////////////////////////////////////////
