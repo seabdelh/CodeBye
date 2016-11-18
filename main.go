@@ -223,23 +223,16 @@ func handle1Out(session *chatbot.Session, message string) string {
 	case "did":
 		if len(messageArr) > 3 && validateHandle(messageArr[1]) && validateProblem(messageArr[3]) {
 			messageReply = handle4In(session, message)
-		} else {
-			messageReply = handle1In(session, message)
 		}
 		break
 	case "could":
 		if len(messageArr) > 5 && validtag(strings.ToLower(messageArr[5])) {
 			messageReply = handle2In(session, message)
-		} else {
-			messageReply = handle1In(session, message)
 		}
 		break
 	case "give":
 		if len(messageArr) > 5 {
 			messageReply = handle5In(session, messageArr[5])
-		} else {
-			messageReply = handle1In(session, message)
-
 		}
 		break
 	case "coach":
@@ -247,14 +240,15 @@ func handle1Out(session *chatbot.Session, message string) string {
 		break
 	}
 	if messageReply == "" {
-		messageReply = "I did not get that !"
+		messageReply = handle1In(session, message)
+
 	}
 	return messageReply
 }
 
 func handle1In(session *chatbot.Session, message string) string {
-	messageRes := "So, how could I help you?"
-	if session.State == 1 || session.State == 2 {
+	messageRes := "So, how could I help you?" + session.Handel
+	if session.State >= 1 && session.State <= 6 {
 		messageRes = "I did not get that !"
 	}
 
