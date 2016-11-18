@@ -3,28 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "ZpmIsVbs9VRiZ8ZMwxxTPyW1ZpM=",
+			"checksumSHA1": "g6BLAG5gjptin2KAqunpmnu6Fa8=",
 			"path": "github.com/heppu/simple-cors",
 			"revision": "0fcde90b1493492935885d754ed54c4e4a402618",
 			"revisionTime": "2016-10-23T13:53:12Z"
 		},
 		{
-			"checksumSHA1": "ljZrmD7pmMXAkGNfp6IEzj31fY8=",
+			"checksumSHA1": "0Un9vDqOgqq64QYFWZpSTePa9RM=",
 			"path": "github.com/joho/godotenv",
 			"revision": "4ed13390c0acd2ff4e371e64d8b97c8954138243",
 			"revisionTime": "2015-09-07T01:02:28Z"
 		},
 		{
-			"checksumSHA1": "UE4lhbPYYWEhqHXQk24OA73m5+8=",
+			"checksumSHA1": "6ZVvq9gdocZXtsQpVPcQWWmZIf8=",
 			"path": "github.com/joho/godotenv/autoload",
 			"revision": "4ed13390c0acd2ff4e371e64d8b97c8954138243",
 			"revisionTime": "2015-09-07T01:02:28Z"
-		},
-		{
-			"checksumSHA1": "AVmNiSslrrytDMSuwhYaK4ZlUQU=",
-			"path": "github.com/sedki-abdelhakim/chatbot",
-			"revision": "ce0258b638cab2afad8ecb7a0bee2d9351f2899a",
-			"revisionTime": "2016-11-17T00:14:24Z"
 		}
 	],
 	"rootPath": "github.com/CodeBye"
