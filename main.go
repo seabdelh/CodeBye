@@ -144,20 +144,20 @@ type Tags struct {
 
 // ProjectObject represents a response of todo.ly when creating objects
 type ProjectObject struct {
-	Id 			string,
-	Content 	string,
-	ItemsCount 	string,
-	Icon 		string,
-	ItemType	string,
-	ParentId	string,
-	Collapsed	string,
-	ItemOrder	string,
-	Children	string,
-	IsProjectShared	string,
-	IsShareApproved	string,
-	IsOwnProject	string,
-	LastSyncedDateTime	string,
-	LastUpdatedDate		string,
+	Id 			string
+	Content 	string
+	ItemsCount 	string
+	Icon 		string
+	ItemType	string
+	ParentId	string
+	Collapsed	string
+	ItemOrder	string
+	Children	string
+	IsProjectShared	string
+	IsShareApproved	string
+	IsOwnProject	string
+	LastSyncedDateTime	string
+	LastUpdatedDate		string
 	Deleted		string
 }
 
