@@ -193,6 +193,8 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 		return handle1Out(session, message), nil
 	case 5:
 		return handle1Out(session, message), nil
+	case 6:
+		return handle1Out(session, message), nil
 
 	}
 
