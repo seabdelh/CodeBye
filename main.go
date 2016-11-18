@@ -146,8 +146,8 @@ const (
 	passLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
-func randomPass() string {
-	p := make([]byte, 10)
+func randomPass(l int) string {
+	p := make([]byte, l)
 	for i := range p {
 		p[i] = passLetters[rand.Intn(len(passLetters))]
 	}
@@ -218,6 +218,9 @@ func handle1Out(session *chatbot.Session, message string) string {
 			messageReply = handle1In(session, message)
 
 		}
+		break
+	case "coach":
+		handle6In(session, message)
 		break
 	}
 	if messageReply == "" {
