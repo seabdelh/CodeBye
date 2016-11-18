@@ -241,13 +241,12 @@ func handle1Out(session *chatbot.Session, message string) string {
 	}
 	if messageReply == "" {
 		messageReply = handle1In(session, message)
-
 	}
 	return messageReply
 }
 
 func handle1In(session *chatbot.Session, message string) string {
-	messageRes := "So, how could I help you?" + session.Handel
+	messageRes := "So, how could I help you? " + session.Handel
 	if session.State >= 1 && session.State <= 6 {
 		messageRes = "I did not get that !"
 	}
