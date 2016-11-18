@@ -332,6 +332,56 @@ func handle5In(session *chatbot.Session, handle string) string {
 
 }
 
+func handle6In(session *chatbot.Session, message string) string {
+	session.State = 6
+
+	r := randomPass(4)
+	generatedEmail := session.Handel + r + "@codebye.me"
+	generatedPass := randomPass(8)
+	fullName := session.Handel
+
+	createTodoUser(generatedEmail, generatedPass, fullName)
+
+	problems := getProblems()
+
+	projectName := "CodeBye Plan " + r
+	projectId := createTodoProject(projectName, generatedEmail, generatedPass)
+
+}
+
+func getProblems() []string {
+
+	var tags = [...]string{"implementation", "dp", "geometry", "math", "greedy", "strings", "graphs", "trees", "games", "probabilities", "bitmasks", "combinatorics"}
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tags[rand.Intn(len(tags))])
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	t := Tags{}
+	json.Unmarshal(body, &t)
+	prob := t.Result.ProblemStatistics
+
+	var problemURLs []string
+	for i in range 4 {
+		problemURLs = append(problemURLs, "http://codeforces.com/problemset/problem/"+prob[i].ContestID+"/"+prob[1].Index)
+	}
+	
+	return problemURLs
+
+}
+
+func createTodoUser(generatedEmail string, generatedPass string, fullName string) {
+	XMLCreateUser := "<UserObject>" +
+		"<Email>" + generatedEmail + "</Email> " +
+		"<FullName>" + fullName + "</FullName> " +
+		"<Password>" + generatedPass + "</Password> " +
+		"</UserObject>"
+
+	resp, err := http.Post("https://todo.ly/api/user.xml", "text/xml", strings.NewReader(XMLCreateUser))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+}
+
 func validtag(tag string) bool {
 	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tag)
 	defer resp.Body.Close()
