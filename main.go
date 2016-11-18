@@ -421,7 +421,7 @@ func getProblems() []string {
 
 	var problemURLs []string
 	for i := range prob[:5] {
-		problemURLs = append(problemURLs, "http://codeforces.com/problemset/problem/"+prob[i].ContestID+"/"+prob[1].Index)
+		problemURLs = append(problemURLs, "http://codeforces.com/problemset/problem/"+strconv.Itoa(prob[i].ContestID)+"/"+prob[1].Index)
 	}
 
 	return problemURLs
