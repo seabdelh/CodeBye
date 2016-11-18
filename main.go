@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,10 +14,12 @@ import (
 	"github.com/sedki-abdelhakim/chatbot"
 	// Autoload environment variables in .env
 
+	"encoding/xml"
+
 	_ "github.com/joho/godotenv/autoload"
 )
 
-/////////////////////////////////
+// UserStruct respresents a user object returned from Codeforces API
 type UserStruct struct {
 	Status string
 	Result []struct {
@@ -39,6 +42,7 @@ type UserStruct struct {
 	}
 }
 
+// ContestStatus represents status of a contest and its submissions in Codeforces.
 type ContestStatus struct {
 	Status string
 	Result []struct {
@@ -72,6 +76,7 @@ type ContestStatus struct {
 	}
 }
 
+// ContestStandings respresents result of a contest and its problems in Codeforces.
 type ContestStandings struct {
 	Status string
 	Result struct {
@@ -119,6 +124,7 @@ type ContestStandings struct {
 	}
 }
 
+// Tags struct respresents list of problems with a specific tag on Codeforces.
 type Tags struct {
 	Status string
 	Result struct {
@@ -138,6 +144,37 @@ type Tags struct {
 	}
 }
 
+// ProjectObject represents a response of todo.ly when creating objects
+type ProjectObject struct {
+	Id                 string
+	Content            string
+	ItemsCount         string
+	Icon               string
+	ItemType           string
+	ParentId           string
+	Collapsed          string
+	ItemOrder          string
+	Children           string
+	IsProjectShared    string
+	IsShareApproved    string
+	IsOwnProject       string
+	LastSyncedDateTime string
+	LastUpdatedDate    string
+	Deleted            string
+}
+
+const (
+	passLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+)
+
+func randomPass(l int) string {
+	p := make([]byte, l)
+	for i := range p {
+		p[i] = passLetters[rand.Intn(len(passLetters))]
+	}
+	return string(p)
+}
+
 /////////////////////////////////////////////
 
 func chatbotProcess(session *chatbot.Session, message string) (string, error) {
@@ -155,6 +192,8 @@ func chatbotProcess(session *chatbot.Session, message string) (string, error) {
 	case 4:
 		return handle1Out(session, message), nil
 	case 5:
+		return handle1Out(session, message), nil
+	case 6:
 		return handle1Out(session, message), nil
 
 	}
@@ -202,6 +241,9 @@ func handle1Out(session *chatbot.Session, message string) string {
 			messageReply = handle1In(session, message)
 
 		}
+		break
+	case "coach":
+		handle6In(session, message)
 		break
 	}
 	if messageReply == "" {
@@ -312,6 +354,92 @@ func handle5In(session *chatbot.Session, handle string) string {
 		`Registration time: ` + strconv.Itoa(user.Result[0].RegistrationTimeSeconds) + ", " +
 		`Max rank: ` + user.Result[0].MaxRank
 
+}
+
+func handle6In(session *chatbot.Session, message string) string {
+	session.State = 6
+
+	r := randomPass(4)
+	generatedEmail := session.Handel + r + "@codebye.me"
+	generatedPass := randomPass(8)
+	fullName := session.Handel
+
+	createTodoUser(generatedEmail, generatedPass, fullName)
+
+	problems := getProblems()
+
+	projectName := "CodeBye Plan " + r
+	projectID := createTodoProject(projectName, generatedEmail, generatedPass)
+
+	for i := range problems {
+		createTodoItem(problems[i], projectID, generatedEmail, generatedPass)
+	}
+
+	return "Nice ! I have set a tailored plan for you, Please visit Todo.ly with username:" + generatedEmail +
+		" and password:" + generatedPass + " in order to see your assigned Tasks/Problems."
+
+}
+
+func createTodoItem(problemURL string, projectID string, generatedEmail string, generatedPass string) {
+	JSONCreateItem := "{\"Content\":\"Problem " + problemURL + "\",\"ProjectId\":\"" + projectID + "\",\"DueDate\":\"\"}"
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", "https://todo.ly/api/items.json", strings.NewReader(JSONCreateItem))
+	req.SetBasicAuth(generatedEmail, generatedPass)
+	client.Do(req)
+
+}
+
+func createTodoProject(projectName string, generatedEmail string, generatedPass string) string {
+	XMLCreateProject := "<ProjectObject>" +
+		"<Content>" + projectName + "</Content> " +
+		"<Icon>4</Icon> " +
+		"</ProjectObject>"
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", "https://todo.ly/api/projects.xml", strings.NewReader(XMLCreateProject))
+	req.SetBasicAuth(generatedEmail, generatedPass)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bodyText, err := ioutil.ReadAll(resp.Body)
+
+	p := ProjectObject{}
+	xml.Unmarshal(bodyText, &p)
+	return p.Id
+}
+
+func getProblems() []string {
+
+	var tags = [...]string{"implementation", "dp", "geometry", "math", "greedy", "strings", "graphs", "trees", "games", "probabilities", "bitmasks", "combinatorics"}
+	resp, _ := http.Get("http://codeforces.com/api/problemset.problems?tags=" + tags[rand.Intn(len(tags))])
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	t := Tags{}
+	json.Unmarshal(body, &t)
+	prob := t.Result.ProblemStatistics
+
+	var problemURLs []string
+	for i := range prob[:5] {
+		problemURLs = append(problemURLs, "http://codeforces.com/problemset/problem/"+prob[i].ContestID+"/"+prob[1].Index)
+	}
+
+	return problemURLs
+
+}
+
+func createTodoUser(generatedEmail string, generatedPass string, fullName string) {
+	XMLCreateUser := "<UserObject>" +
+		"<Email>" + generatedEmail + "</Email> " +
+		"<FullName>" + fullName + "</FullName> " +
+		"<Password>" + generatedPass + "</Password> " +
+		"</UserObject>"
+
+	resp, err := http.Post("https://todo.ly/api/user.xml", "text/xml", strings.NewReader(XMLCreateUser))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
 }
 
 func validtag(tag string) bool {
