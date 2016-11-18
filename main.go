@@ -243,7 +243,7 @@ func handle1Out(session *chatbot.Session, message string) string {
 		}
 		break
 	case "coach":
-		handle6In(session, message)
+		messageReply = handle6In(session, message)
 		break
 	}
 	if messageReply == "" {
